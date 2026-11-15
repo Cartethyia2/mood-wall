@@ -16,25 +16,58 @@ def hello():
     return jsonify({"msg": "你好，世界", "from": "你的第一台服务器"})
 
 
-# ================= 心情墙的"仓库" =================
-# 先放一个 Python 列表当临时仓库，里面已经贴了两张示例纸条
-# （注意：它住在内存里，服务器一关就全没了——下节课换数据库解决）
-NOTES = [
-    {"name": "小K", "text": "今天广州下雨，适合摸头", "time": "2026-11-14 18:00"},
-    {"name": "刳云", "text": "后端课第一天，我居然在写服务器", "time": "2026-11-14 18:01"},
-]
-
-@app.route("/api/notes")#以后敲这个地址的，GET这个门被敲，找下面的函数
-def send_notes(): #定义一个能发送小纸条的函数
-    return jsonify(NOTES) #打包寄给浏览器
 
 
-@app.route("/api/notes",methods =["POST"]) #POST这个门被敲，找下面的函数
-def receive_notes(): #定义包裹接收的函数
-    note=request.get_json() #拆包裹里面的小纸条
+# ================= 数据库基建（今天的新仓库） =================
+import sqlite3
+
+def get_db():
+    """打开数据库文件 mood.db（不存在会自动创建），返回连接。"""
+    db = sqlite3.connect("mood.db")
+    db.row_factory = sqlite3.Row   # 查出来的每行可以按列名取值，像字典一样
+    return db
+
+def init_db():
+    """建表（如果还没有）。表 = 带列的清单，这张表叫 notes，有三列：name/text/time。"""
+    db = get_db()
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            text TEXT,
+            time TEXT
+        )
+    """)
+    # 如果表是空的，放两张示例纸条
+    count = db.execute("SELECT COUNT(*) FROM notes").fetchone()[0]
+    if count == 0:
+        db.execute("INSERT INTO notes (name, text, time) VALUES (?, ?, ?)",
+                   ("小K", "今天广州下雨，适合摸头", "2026-11-14 18:00"))
+        db.execute("INSERT INTO notes (name, text, time) VALUES (?, ?, ?)",
+                   ("刳云", "后端课第一天，我居然在写服务器", "2026-11-14 18:01"))
+    db.commit()   # 提交 = 落盘保存（和 git commit 的"落账"一个意思）
+    db.close()
+
+init_db()
+
+@app.route("/api/notes")
+def send_notes(): 
+    db = get_db()
+    rows = db.execute("SELECT name, text, time FROM notes").fetchall()
+    db.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route("/api/notes",methods =["POST"]) 
+def receive_notes(): 
+    note=request.get_json() 
     note["time"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-    NOTES.append(note) #这个是把什么东西搞到服务器内存里面，用append搞进去
-    return jsonify({"ok":True}) #回执，类似“已签收”
+    db = get_db()
+    db.execute("INSERT INTO notes (name, text, time) VALUES (?, ?, ?)",
+               (note["name"], note["text"], note["time"]))
+    db.commit()
+    db.close() 
+    return jsonify({"ok":True}) 
 
 
 
