@@ -1,11 +1,16 @@
 # 心情墙后端 · 你的第一台服务器
 # 运行方法：python app.py  （然后浏览器打开 http://127.0.0.1:5000/api/hello）
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from datetime import datetime
 # app 就是"服务器本体"，所有功能都挂在它身上
 app = Flask(__name__)
 app.json.ensure_ascii = False  # JSON 里的中文别转义成 \uXXXX，原样输出
+
+
+@app.route("/")
+def home():
+    return send_file("index.html")
 
 # @app.route(...) 是"门牌号"：
 # 意思是——只要有浏览器来敲 /api/hello 这个门，就执行下面这个函数
