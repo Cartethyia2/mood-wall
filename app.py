@@ -52,21 +52,21 @@ init_db()
 
 @app.route("/api/notes")
 def send_notes(): 
-    db = get_db()
-    rows = db.execute("SELECT name, text, time FROM notes").fetchall()
-    db.close()
-    return jsonify([dict(r) for r in rows])
+    db = get_db() #开门，db类似于一台仓库对讲机，这一行是领取对讲机
+    rows = db.execute("SELECT name, text, time FROM notes").fetchall()#从notes里面选这些变量，db.execute(SQL) =把取货单交给仓库，仓库跑去找货，回来时推着一个小推车（装着找到的所有行）；.fetchall() = 把小推车上的货全部卸下来，变成一个列表；rows是一个名字
+    db.close()#下班还对讲机
+    return jsonify([dict(r) for r in rows])#r是一种特殊的包装，jsonify不会打这个包，要先变成普通字典。对 rows 里的每一个 r，都 dict(r) 一下，收成新列表"。然后 jsonify 打包寄回
 
 
 @app.route("/api/notes",methods =["POST"]) 
 def receive_notes(): 
     note=request.get_json() 
-    note["time"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-    db = get_db()
-    db.execute("INSERT INTO notes (name, text, time) VALUES (?, ?, ?)",
-               (note["name"], note["text"], note["time"]))
-    db.commit()
-    db.close() 
+    note["time"] = datetime.now().strftime("%Y-%m-%d %H:%M")#盖章服务器官方时间
+    db = get_db()#跟55一样
+    db.execute("INSERT INTO notes (name, text, time) VALUES (?, ?, ?)",#不拼接，留三个槽位，这是模板，焊死形状
+               (note["name"], note["text"], note["time"]))#这和上面是同一句话，括号没合上，模板和数据一起交，然后先焊死模板，再灌数据，按位置一一对应灌进三个槽位
+    db.commit()#提交
+    db.close() #跟57一样
     return jsonify({"ok":True}) 
 
 
