@@ -79,4 +79,5 @@ def receive_notes():
 
 
 # 启动服务器，监听 5000 端口（可以理解为：在 5000 号窗口办公）
-app.run(debug=True, port=5000)
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
